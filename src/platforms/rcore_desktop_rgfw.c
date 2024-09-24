@@ -858,7 +858,6 @@ void PollInputEvents(void)
     bool realTouch = false;     // Flag to differentiate real touch gestures from mouse ones
 
     // Register previous keys states
-    // NOTE: Android supports up to 260 keys
     for (int i = 0; i < MAX_KEYBOARD_KEYS; i++)
     {
         CORE.Input.Keyboard.previousKeyState[i] = CORE.Input.Keyboard.currentKeyState[i];

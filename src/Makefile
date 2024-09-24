@@ -25,8 +25,6 @@
 #     > PLATFORM_DRM:
 #         - Raspberry Pi 0-5 (DRM/KMS)
 #         - Linux DRM subsystem (KMS mode)
-#     > PLATFORM_ANDROID:
-#         - Android (ARM, ARM64)
 #
 #   Many thanks to Milan Nikolic (@gen2brain) for implementing Android platform pipeline.
 #   Many thanks to Emanuele Petriglia for his contribution on GNU/Linux pipeline.
@@ -127,7 +125,7 @@ HOST_PLATFORM_OS ?= WINDOWS
 PLATFORM_OS ?= WINDOWS
 
 # Determine PLATFORM_OS when required
-ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW PLATFORM_DESKTOP_SDL PLATFORM_DESKTOP_RGFW PLATFORM_WEB PLATFORM_ANDROID))
+ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW PLATFORM_DESKTOP_SDL PLATFORM_DESKTOP_RGFW PLATFORM_WEB))
     # No uname.exe on MinGW!, but OS=Windows_NT on Windows!
     # ifeq ($(UNAME),Msys) -> Windows
     ifeq ($(OS),Windows_NT)
@@ -189,45 +187,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
     endif
 endif
 
-ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-    # Android architecture
-    # Starting at 2019 using arm64 is mandatory for published apps,
-    # Starting on August 2020, minimum required target API is Android 10 (API level 29)
-    ANDROID_ARCH ?= arm64
-    ANDROID_API_VERSION ?= 29
-
-    # Android required path variables
-    # NOTE: Starting with Android NDK r21, no more toolchain generation is required, NDK is the toolchain on itself
-    ifeq ($(OS),Windows_NT)
-        ANDROID_NDK ?= C:/android-ndk
-        ANDROID_TOOLCHAIN = $(ANDROID_NDK)/toolchains/llvm/prebuilt/windows-x86_64
-    else
-		ANDROID_NDK ?= /usr/lib/android/ndk
-		ifeq ($(PLATFORM_OS), OSX)
-			ANDROID_TOOLCHAIN = $(ANDROID_NDK)/toolchains/llvm/prebuilt/darwin-x86_64
-		else
-			ANDROID_TOOLCHAIN = $(ANDROID_NDK)/toolchains/llvm/prebuilt/linux-x86_64
-		endif
-    endif
-
-    # NOTE: Sysroot can also be reference from $(ANDROID_NDK)/sysroot
-    ANDROID_SYSROOT ?= $(ANDROID_TOOLCHAIN)/sysroot
-
-    ifeq ($(ANDROID_ARCH),arm)
-        ANDROID_COMPILER_ARCH = armv7a
-    endif
-    ifeq ($(ANDROID_ARCH),arm64)
-        ANDROID_COMPILER_ARCH = aarch64
-    endif
-    ifeq ($(ANDROID_ARCH),x86)
-        ANDROID_COMPILER_ARCH = i686
-    endif
-    ifeq ($(ANDROID_ARCH),x86_64)
-        ANDROID_COMPILER_ARCH = x86_64
-    endif
-
-endif
-
 # Define raylib graphics api depending on selected platform
 ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW)
     # By default use OpenGL 3.3 on desktop platforms
@@ -258,10 +217,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
     GRAPHICS = GRAPHICS_API_OPENGL_ES2
     #GRAPHICS = GRAPHICS_API_OPENGL_ES3      # Uncomment to use ES3/WebGL2 (preliminary support).
 endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-    # By default use OpenGL ES 2.0 on Android
-    GRAPHICS = GRAPHICS_API_OPENGL_ES2
-endif
 
 # Define default C compiler and archiver to pack library: CC, AR
 #------------------------------------------------------------------------------------------------
@@ -291,23 +246,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
     # HTML5 emscripten compiler
     CC = emcc
     AR = emar
-endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-    # Android toolchain (must be provided for desired architecture and compiler)
-    ifeq ($(ANDROID_ARCH),arm)
-        CC = $(ANDROID_TOOLCHAIN)/bin/$(ANDROID_COMPILER_ARCH)-linux-androideabi$(ANDROID_API_VERSION)-clang
-    endif
-    ifeq ($(ANDROID_ARCH),arm64)
-        CC = $(ANDROID_TOOLCHAIN)/bin/$(ANDROID_COMPILER_ARCH)-linux-android$(ANDROID_API_VERSION)-clang
-    endif
-    ifeq ($(ANDROID_ARCH),x86)
-        CC = $(ANDROID_TOOLCHAIN)/bin/$(ANDROID_COMPILER_ARCH)-linux-android$(ANDROID_API_VERSION)-clang
-    endif
-    ifeq ($(ANDROID_ARCH),x86_64)
-        CC = $(ANDROID_TOOLCHAIN)/bin/$(ANDROID_COMPILER_ARCH)-linux-android$(ANDROID_API_VERSION)-clang
-    endif
-    # It seems from Android NDK r22 onwards we need to use llvm-ar
-    AR = $(ANDROID_TOOLCHAIN)/bin/llvm-ar
 endif
 
 # Define compiler flags: CFLAGS
@@ -352,9 +290,6 @@ ifeq ($(RAYLIB_BUILD_MODE),RELEASE)
     ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW)
         CFLAGS += -O1
     endif
-    ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-        CFLAGS += -O2
-    endif
 endif
 
 # Additional flags for compiler (if desired)
@@ -382,28 +317,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
         CFLAGS += -sASSERTIONS=1 --profiling
     endif
     #CFLAGS += -sGL_ENABLE_GET_PROC_ADDRESS
-endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-    # Compiler flags for arquitecture
-    ifeq ($(ANDROID_ARCH),arm)
-        CFLAGS += -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16
-    endif
-    ifeq ($(ANDROID_ARCH),arm64)
-        CFLAGS += -target aarch64 -mfix-cortex-a53-835769
-    endif
-    ifeq ($(ANDROID_ARCH),x86)
-        CFLAGS += -march=i686
-    endif
-    ifeq ($(ANDROID_ARCH),x86_64)
-        CFLAGS += -march=x86-64
-    endif
-    # Compilation functions attributes options
-    CFLAGS += -ffunction-sections -funwind-tables -fstack-protector-strong -fPIE -fPIC
-    # Compiler options for the linker
-    # -Werror=format-security
-    CFLAGS += -Wa,--noexecstack -Wformat -no-canonical-prefixes
-    # Preprocessor macro definitions
-    CFLAGS += -D__ANDROID__ -DPLATFORM_ANDROID -D__ANDROID_API__=$(ANDROID_API_VERSION)
 endif
 
 # Define required compilation flags for raylib SHARED lib
@@ -483,26 +396,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DRM)
         INCLUDE_PATHS += -I$(RPI_TOOLCHAIN_SYSROOT)/opt/vc/include
     endif
 endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-    NATIVE_APP_GLUE = $(ANDROID_NDK)/sources/android/native_app_glue
-    # Include android_native_app_glue.h
-    INCLUDE_PATHS += -I$(NATIVE_APP_GLUE)
-
-    # Android required libraries
-    INCLUDE_PATHS += -I$(ANDROID_SYSROOT)/usr/include
-    ifeq ($(ANDROID_ARCH),arm)
-        INCLUDE_PATHS += -I$(ANDROID_SYSROOT)/usr/include/arm-linux-androideabi
-    endif
-    ifeq ($(ANDROID_ARCH),arm64)
-        INCLUDE_PATHS += -I$(ANDROID_SYSROOT)/usr/include/aarch64-linux-android
-    endif
-    ifeq ($(ANDROID_ARCH),x86)
-        INCLUDE_PATHS += -I$(ANDROID_SYSROOT)/usr/include/i686-linux-android
-    endif
-    ifeq ($(ANDROID_ARCH),x86_64)
-        INCLUDE_PATHS += -I$(ANDROID_SYSROOT)/usr/include/x86_64-linux-android
-    endif
-endif
 
 # Define library paths containing required libs: LDFLAGS
 # NOTE: This is only required for dynamic library generation
@@ -534,16 +427,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DRM)
     ifeq ($(USE_RPI_CROSSCOMPILER), TRUE)
         LDFLAGS += -L$(RPI_TOOLCHAIN_SYSROOT)/opt/vc/lib -L$(RPI_TOOLCHAIN_SYSROOT)/usr/lib
     endif
-endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-    LDFLAGS += -Wl,-soname,libraylib.$(RAYLIB_API_VERSION).so -Wl,--exclude-libs,libatomic.a
-    LDFLAGS += -Wl,--build-id -Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now -Wl,--warn-shared-textrel -Wl,--fatal-warnings
-    # Force linking of library module to define symbol
-    LDFLAGS += -u ANativeActivity_onCreate
-    # Library paths containing required libs
-    LDFLAGS += -Lsrc
-    # Avoid unresolved symbol pointing to external main()
-    LDFLAGS += -Wl,-undefined,dynamic_lookup
 endif
 
 # Define libraries required on linking: LDLIBS
@@ -619,9 +502,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DRM)
         LDLIBS += -latomic
     endif
 endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-    LDLIBS = -llog -landroid -lEGL -lGLESv2 -lOpenSLES -lc -lm
-endif
 
 # Define source code object files required
 #------------------------------------------------------------------------------------------------
@@ -644,10 +524,6 @@ ifeq ($(RAYLIB_MODULE_AUDIO),TRUE)
 endif
 ifeq ($(RAYLIB_MODULE_RAYGUI),TRUE)
     OBJS += raygui.o
-endif
-
-ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-    OBJS += android_native_app_glue.o
 endif
 
 # Define processes to execute
@@ -701,15 +577,6 @@ else
 				@echo "raylib shared library generated (lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION)) in $(RAYLIB_RELEASE_PATH)!"
 				cd $(RAYLIB_RELEASE_PATH) && ln -fsv lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION) lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_API_VERSION)
 				cd $(RAYLIB_RELEASE_PATH) && ln -fsv lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_API_VERSION) lib$(RAYLIB_LIB_NAME).so
-        endif
-        ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-			$(CC) -shared -o $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).so $(OBJS) $(LDFLAGS) $(LDLIBS)
-			@echo "raylib shared library generated (lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).so)!"
-            # WARNING: symbolic links creation on Windows should be done using mklink command, no ln available
-            ifeq ($(HOST_PLATFORM_OS),LINUX)
-				cd $(RAYLIB_RELEASE_PATH) && ln -fs lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).so lib$(RAYLIB_LIB_NAME).$(RAYLIB_API_VERSION).so
-				cd $(RAYLIB_RELEASE_PATH) && ln -fs lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).so lib$(RAYLIB_LIB_NAME).so
-            endif
         endif
     else
         # Compile raylib static library version $(RAYLIB_VERSION)
@@ -768,10 +635,6 @@ else
 	@echo "#define RAYGUI_IMPLEMENTATION" > raygui.c
 	@echo "#include \"$(RAYLIB_MODULE_RAYGUI_PATH)/raygui.h\"" >> raygui.c
 endif
-
-# Compile android_native_app_glue module
-android_native_app_glue.o : $(NATIVE_APP_GLUE)/android_native_app_glue.c
-	$(CC) -c $< $(CFLAGS) $(INCLUDE_PATHS)
 
 # Install generated and needed files to desired directories.
 # On GNU/Linux and BSDs, there are some standard directories that contain extra
@@ -857,9 +720,6 @@ clean:	clean_shell_$(PLATFORM_SHELL)
 
 clean_shell_sh:
 	rm -fv *.o $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).a $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).bc $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).so* raygui.c $(RAYLIB_RELEASE_PATH)/*-protocol.h $(RAYLIB_RELEASE_PATH)/*-protocol-code.h
-ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-	rm -fv $(NATIVE_APP_GLUE)/android_native_app_glue.o
-endif
 
 # Set specific target variable
 clean_shell_cmd: SHELL=cmd

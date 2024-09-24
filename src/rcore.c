@@ -17,8 +17,6 @@
 *       > PLATFORM_DRM:
 *           - Raspberry Pi 0-5 (DRM/KMS)
 *           - Linux DRM subsystem (KMS mode)
-*       > PLATFORM_ANDROID:
-*           - Android (ARM, ARM64)
 *
 *   CONFIGURATION:
 *       #define SUPPORT_DEFAULT_FONT (default)
@@ -359,7 +357,7 @@ typedef struct CoreData {
         double draw;                        // Time measure for frame draw
         double frame;                       // Time measure for one frame
         double target;                      // Desired time for one frame, if 0 not applied
-        unsigned long long int base;        // Base time measure for hi-res timer (PLATFORM_ANDROID, PLATFORM_DRM)
+        unsigned long long int base;        // Base time measure for hi-res timer (PLATFORM_DRM)
         unsigned int frameCounter;          // Frame counter
 
     } Time;
@@ -523,8 +521,6 @@ const char *TextFormat(const char *text, ...);              // Formatting of tex
     #include "platforms/rcore_web.c"
 #elif defined(PLATFORM_DRM)
     #include "platforms/rcore_drm.c"
-#elif defined(PLATFORM_ANDROID)
-    #include "platforms/rcore_android.c"
 #else
     // TODO: Include your custom platform backend!
     // i.e software rendering backend or console backend!
@@ -593,8 +589,6 @@ void InitWindow(int width, int height, const char *title)
     TRACELOG(LOG_INFO, "Platform backend: WEB (HTML5)");
 #elif defined(PLATFORM_DRM)
     TRACELOG(LOG_INFO, "Platform backend: NATIVE DRM");
-#elif defined(PLATFORM_ANDROID)
-    TRACELOG(LOG_INFO, "Platform backend: ANDROID");
 #else
     // TODO: Include your custom platform backend!
     // i.e software rendering backend or console backend!

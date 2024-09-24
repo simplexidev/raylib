@@ -38,12 +38,6 @@
 
 #include "utils.h"
 
-#if defined(PLATFORM_ANDROID)
-    #include <errno.h>                  // Required for: Android error types
-    #include <android/log.h>            // Required for: Android log system: __android_log_vprint()
-    #include <android/asset_manager.h>  // Required for: Android assets manager: AAsset, AAssetManager_open()...
-#endif
-
 #include <stdlib.h>                     // Required for: exit()
 #include <stdio.h>                      // Required for: FILE, fopen(), fseek(), ftell(), fread(), fwrite(), fprintf(), vprintf(), fclose()
 #include <stdarg.h>                     // Required for: va_list, va_start(), va_end()
@@ -76,24 +70,9 @@ void SetSaveFileDataCallback(SaveFileDataCallback callback) { saveFileData = cal
 void SetLoadFileTextCallback(LoadFileTextCallback callback) { loadFileText = callback; }  // Set custom file text loader
 void SetSaveFileTextCallback(SaveFileTextCallback callback) { saveFileText = callback; }  // Set custom file text saver
 
-
-#if defined(PLATFORM_ANDROID)
-static AAssetManager *assetManager = NULL;          // Android assets manager pointer
-static const char *internalDataPath = NULL;         // Android internal data path
-#endif
-
 //----------------------------------------------------------------------------------
 // Module specific Functions Declaration
 //----------------------------------------------------------------------------------
-#if defined(PLATFORM_ANDROID)
-FILE *funopen(const void *cookie, int (*readfn)(void *, char *, int), int (*writefn)(void *, const char *, int),
-              fpos_t (*seekfn)(void *, fpos_t, int), int (*closefn)(void *));
-
-static int android_read(void *cookie, char *buf, int size);
-static int android_write(void *cookie, const char *buf, int size);
-static fpos_t android_seek(void *cookie, fpos_t offset, int whence);
-static int android_close(void *cookie);
-#endif
 
 //----------------------------------------------------------------------------------
 // Module Functions Definition - Utilities
@@ -119,18 +98,6 @@ void TraceLog(int logType, const char *text, ...)
         return;
     }
 
-#if defined(PLATFORM_ANDROID)
-    switch (logType)
-    {
-        case LOG_TRACE: __android_log_vprint(ANDROID_LOG_VERBOSE, "raylib", text, args); break;
-        case LOG_DEBUG: __android_log_vprint(ANDROID_LOG_DEBUG, "raylib", text, args); break;
-        case LOG_INFO: __android_log_vprint(ANDROID_LOG_INFO, "raylib", text, args); break;
-        case LOG_WARNING: __android_log_vprint(ANDROID_LOG_WARN, "raylib", text, args); break;
-        case LOG_ERROR: __android_log_vprint(ANDROID_LOG_ERROR, "raylib", text, args); break;
-        case LOG_FATAL: __android_log_vprint(ANDROID_LOG_FATAL, "raylib", text, args); break;
-        default: break;
-    }
-#else
     char buffer[MAX_TRACELOG_MSG_LENGTH] = { 0 };
 
     switch (logType)
@@ -149,7 +116,6 @@ void TraceLog(int logType, const char *text, ...)
     strcat(buffer, "\n");
     vprintf(buffer, args);
     fflush(stdout);
-#endif
 
     va_end(args);
 
@@ -439,73 +405,6 @@ bool SaveFileText(const char *fileName, char *text)
     return success;
 }
 
-#if defined(PLATFORM_ANDROID)
-// Initialize asset manager from android app
-void InitAssetManager(AAssetManager *manager, const char *dataPath)
-{
-    assetManager = manager;
-    internalDataPath = dataPath;
-}
-
-// Replacement for fopen()
-// Ref: https://developer.android.com/ndk/reference/group/asset
-FILE *android_fopen(const char *fileName, const char *mode)
-{
-    if (mode[0] == 'w')
-    {
-        // fopen() is mapped to android_fopen() that only grants read access to
-        // assets directory through AAssetManager but we want to also be able to
-        // write data when required using the standard stdio FILE access functions
-        // Ref: https://stackoverflow.com/questions/11294487/android-writing-saving-files-from-native-code-only
-        #undef fopen
-        return fopen(TextFormat("%s/%s", internalDataPath, fileName), mode);
-        #define fopen(name, mode) android_fopen(name, mode)
-    }
-    else
-    {
-        // NOTE: AAsset provides access to read-only asset
-        AAsset *asset = AAssetManager_open(assetManager, fileName, AASSET_MODE_UNKNOWN);
-
-        if (asset != NULL)
-        {
-            // Get pointer to file in the assets
-            return funopen(asset, android_read, android_write, android_seek, android_close);
-        }
-        else
-        {
-            #undef fopen
-            // Just do a regular open if file is not found in the assets
-            return fopen(TextFormat("%s/%s", internalDataPath, fileName), mode);
-            #define fopen(name, mode) android_fopen(name, mode)
-        }
-    }
-}
-#endif  // PLATFORM_ANDROID
-
 //----------------------------------------------------------------------------------
 // Module specific Functions Definition
 //----------------------------------------------------------------------------------
-#if defined(PLATFORM_ANDROID)
-static int android_read(void *cookie, char *data, int dataSize)
-{
-    return AAsset_read((AAsset *)cookie, data, dataSize);
-}
-
-static int android_write(void *cookie, const char *data, int dataSize)
-{
-    TRACELOG(LOG_WARNING, "ANDROID: Failed to provide write access to APK");
-
-    return EACCES;
-}
-
-static fpos_t android_seek(void *cookie, fpos_t offset, int whence)
-{
-    return AAsset_seek((AAsset *)cookie, offset, whence);
-}
-
-static int android_close(void *cookie)
-{
-    AAsset_close((AAsset *)cookie);
-    return 0;
-}
-#endif  // PLATFORM_ANDROID

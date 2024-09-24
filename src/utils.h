@@ -27,11 +27,6 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#if defined(PLATFORM_ANDROID)
-    #include <stdio.h>                      // Required for: FILE
-    #include <android/asset_manager.h>      // Required for: AAssetManager
-#endif
-
 #if defined(SUPPORT_TRACELOG)
     #define TRACELOG(level, ...) TraceLog(level, __VA_ARGS__)
 
@@ -48,9 +43,6 @@
 //----------------------------------------------------------------------------------
 // Some basic Defines
 //----------------------------------------------------------------------------------
-#if defined(PLATFORM_ANDROID)
-    #define fopen(name, mode) android_fopen(name, mode)
-#endif
 
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
@@ -67,11 +59,6 @@
 //----------------------------------------------------------------------------------
 #if defined(__cplusplus)
 extern "C" {            // Prevents name mangling of functions
-#endif
-
-#if defined(PLATFORM_ANDROID)
-void InitAssetManager(AAssetManager *manager, const char *dataPath);   // Initialize asset manager from android app
-FILE *android_fopen(const char *fileName, const char *mode);           // Replacement for fopen() -> Read-only!
 #endif
 
 #if defined(__cplusplus)
