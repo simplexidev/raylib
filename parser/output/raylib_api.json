@@ -2077,26 +2077,6 @@
           "name": "KEY_KP_EQUAL",
           "value": 336,
           "description": "Key: Keypad ="
-        },
-        {
-          "name": "KEY_BACK",
-          "value": 4,
-          "description": "Key: Android back button"
-        },
-        {
-          "name": "KEY_MENU",
-          "value": 5,
-          "description": "Key: Android menu button"
-        },
-        {
-          "name": "KEY_VOLUME_UP",
-          "value": 24,
-          "description": "Key: Android volume up button"
-        },
-        {
-          "name": "KEY_VOLUME_DOWN",
-          "value": 25,
-          "description": "Key: Android volume down button"
         }
       ]
     },

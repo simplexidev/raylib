@@ -439,10 +439,6 @@
             <Value name="KEY_KP_ADD" integer="334" desc="Key: Keypad +" />
             <Value name="KEY_KP_ENTER" integer="335" desc="Key: Keypad Enter" />
             <Value name="KEY_KP_EQUAL" integer="336" desc="Key: Keypad =" />
-            <Value name="KEY_BACK" integer="4" desc="Key: Android back button" />
-            <Value name="KEY_MENU" integer="5" desc="Key: Android menu button" />
-            <Value name="KEY_VOLUME_UP" integer="24" desc="Key: Android volume up button" />
-            <Value name="KEY_VOLUME_DOWN" integer="25" desc="Key: Android volume down button" />
         </Enum>
         <Enum name="MouseButton" valueCount="7" desc="Mouse buttons">
             <Value name="MOUSE_BUTTON_LEFT" integer="0" desc="Mouse button left" />
