@@ -1,6 +1,6 @@
 #**************************************************************************************************
 #
-#   raylib makefile for Desktop platforms, Raspberry Pi, Android and HTML5
+#   raylib makefile for Desktop platforms, Raspberry Pi and HTML5
 #
 #   Copyright (c) 2013-2024 Ramon Santamaria (@raysan5)
 #
@@ -30,7 +30,7 @@ RAYLIB_PATH        ?= ..\..
 
 # Define default options
 
-# One of PLATFORM_DESKTOP, PLATFORM_RPI, PLATFORM_ANDROID, PLATFORM_WEB
+# One of PLATFORM_DESKTOP, PLATFORM_RPI, PLATFORM_WEB
 PLATFORM           ?= PLATFORM_DESKTOP
 
 # Locations of your newly installed library and associated headers. See ../src/Makefile
@@ -350,17 +350,10 @@ SRC = $(call rwildcard, *.c, *.h)
 #OBJS = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 OBJS = main.c
 
-# For Android platform we call a custom Makefile.Android
-ifeq ($(PLATFORM),PLATFORM_ANDROID)
-    MAKEFILE_PARAMS = -f Makefile.Android 
-    export PROJECT_NAME
-    export SRC_DIR
-else
-    MAKEFILE_PARAMS = $(PROJECT_NAME)
-endif
+MAKEFILE_PARAMS = $(PROJECT_NAME)
+
 
 # Default target entry
-# NOTE: We call this Makefile target or Makefile.Android target
 all:
 	$(MAKE) $(MAKEFILE_PARAMS)
 
