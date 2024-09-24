@@ -1,6 +1,6 @@
 #**************************************************************************************************
 #
-#   raylib makefile for Desktop platforms, Raspberry Pi, Android and HTML5
+#   raylib makefile for Desktop platforms, Raspberry Pi and HTML5
 #
 #   Copyright (c) 2013-2024 Ramon Santamaria (@raysan5)
 #
@@ -25,7 +25,7 @@
 
 # Define required environment variables
 #------------------------------------------------------------------------------------------------
-# Define target platform: PLATFORM_DESKTOP, PLATFORM_DRM, PLATFORM_ANDROID, PLATFORM_WEB
+# Define target platform: PLATFORM_DESKTOP, PLATFORM_DRM, PLATFORM_WEB
 PLATFORM              ?= PLATFORM_WEB
 
 # Define required raylib variables
@@ -145,9 +145,6 @@ ifeq ($(PLATFORM),PLATFORM_DESKTOP)
     ifeq ($(PLATFORM_OS),WINDOWS)
         MAKE = mingw32-make
     endif
-endif
-ifeq ($(PLATFORM),PLATFORM_ANDROID)
-    MAKE = mingw32-make
 endif
 ifeq ($(PLATFORM),PLATFORM_WEB)
     MAKE = emmake make

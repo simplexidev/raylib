@@ -21,7 +21,7 @@
 
 #if defined(PLATFORM_DESKTOP)
     #define GLSL_VERSION            330
-#else   // PLATFORM_ANDROID, PLATFORM_WEB
+#else   // PLATFORM_WEB
     #define GLSL_VERSION            120
 #endif
 

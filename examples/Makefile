@@ -25,8 +25,6 @@
 #     > PLATFORM_DRM:
 #         - Raspberry Pi 0-5 (DRM/KMS)
 #         - Linux DRM subsystem (KMS mode)
-#     > PLATFORM_ANDROID:
-#         - Android (ARM, ARM64)
 #
 #   Copyright (c) 2013-2024 Ramon Santamaria (@raysan5)
 #
@@ -51,7 +49,7 @@
 
 # Define required environment variables
 #------------------------------------------------------------------------------------------------
-# Define target platform: PLATFORM_DESKTOP, PLATFORM_DESKTOP_SDL, PLATFORM_DRM, PLATFORM_ANDROID, PLATFORM_WEB
+# Define target platform: PLATFORM_DESKTOP, PLATFORM_DESKTOP_SDL, PLATFORM_DRM, PLATFORM_WEB
 PLATFORM              ?= PLATFORM_DESKTOP
 
 ifeq ($(PLATFORM), PLATFORM_DESKTOP)
@@ -192,9 +190,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW)
     ifeq ($(PLATFORM_OS),WINDOWS)
         MAKE = mingw32-make
     endif
-endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-    MAKE = mingw32-make
 endif
 ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
     MAKE = emmake make
@@ -652,11 +647,8 @@ audio: $(AUDIO)
 others: $(OTHERS)
 
 # Generic compilation pattern
-# NOTE: Examples must be ready for Android compilation!
 %: %.c
-ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
-	$(MAKE) -f Makefile.Android PROJECT_NAME=$@ PROJECT_SOURCE_FILES=$<
-else ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
+ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
 	$(MAKE) -f Makefile.Web $@
 else
 	$(CC) -o $@$(EXT) $< $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM) -D$(TARGET_PLATFORM)
