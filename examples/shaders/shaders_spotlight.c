@@ -32,11 +32,7 @@
 
 #include "raymath.h"
 
-#if defined(PLATFORM_DESKTOP)
-    #define GLSL_VERSION            330
-#else   // PLATFORM_WEB
-    #define GLSL_VERSION            100
-#endif
+#define GLSL_VERSION            330
 
 #define MAX_SPOTS         3        // NOTE: It must be the same as define in shader
 #define MAX_STARS       400

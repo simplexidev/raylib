@@ -229,23 +229,6 @@ fn compileRaylib(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
 
             raylib.defineCMacro("PLATFORM_DESKTOP", null);
         },
-        .emscripten => {
-            raylib.defineCMacro("PLATFORM_WEB", null);
-            if (options.opengl_version == .auto) {
-                raylib.defineCMacro("GRAPHICS_API_OPENGL_ES2", null);
-            }
-
-            if (b.sysroot == null) {
-                @panic("Pass '--sysroot \"$EMSDK/upstream/emscripten\"'");
-            }
-
-            const cache_include = std.fs.path.join(b.allocator, &.{ b.sysroot.?, "cache", "sysroot", "include" }) catch @panic("Out of memory");
-            defer b.allocator.free(cache_include);
-
-            var dir = std.fs.openDirAbsolute(cache_include, std.fs.Dir.OpenDirOptions{ .access_sub_paths = true, .no_follow = true }) catch @panic("No emscripten cache. Generate it!");
-            dir.close();
-            raylib.addIncludePath(.{ .cwd_relative = cache_include });
-        },
         else => {
             @panic("Unsupported OS");
         },

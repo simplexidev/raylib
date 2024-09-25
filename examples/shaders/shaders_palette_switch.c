@@ -22,11 +22,7 @@
 
 #include "raylib.h"
 
-#if defined(PLATFORM_DESKTOP)
-    #define GLSL_VERSION            330
-#else   // PLATFORM_WEB
-    #define GLSL_VERSION            100
-#endif
+#define GLSL_VERSION            330
 
 #define MAX_PALETTES            3
 #define COLORS_PER_PALETTE      8

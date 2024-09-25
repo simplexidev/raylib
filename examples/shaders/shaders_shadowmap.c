@@ -15,11 +15,7 @@
 #include "raymath.h"
 #include "rlgl.h"
 
-#if defined(PLATFORM_DESKTOP)
 #define GLSL_VERSION            330
-#else   // PLATFORM_WEB
-#define GLSL_VERSION            120
-#endif
 
 #define SHADOWMAP_RESOLUTION 1024
 

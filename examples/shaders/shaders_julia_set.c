@@ -20,11 +20,7 @@
 
 #include "raylib.h"
 
-#if defined(PLATFORM_DESKTOP)
-    #define GLSL_VERSION            330
-#else   // PLATFORM_WEB
-    #define GLSL_VERSION            100
-#endif
+#define GLSL_VERSION            330
 
 // A few good julia sets
 const float pointsOfInterest[6][2] =

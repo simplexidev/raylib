@@ -63,19 +63,6 @@ if(NOT CMAKE_USE_PTHREADS_INIT OR NOT HAVE_STDATOMIC_H)
     list(REMOVE_ITEM example_sources ${CMAKE_CURRENT_SOURCE_DIR}/core/core_loading_thread.c)
 endif ()
 
-if (${PLATFORM} MATCHES "Web")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os")    
-    # Since WASM is used, ALLOW_MEMORY_GROWTH has no extra overheads
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s WASM=1 -s ASYNCIFY -s ALLOW_MEMORY_GROWTH=1 --shell-file ${CMAKE_SOURCE_DIR}/src/shell.html")
-    set(CMAKE_EXECUTABLE_SUFFIX ".html")
-
-    list(REMOVE_ITEM example_sources ${CMAKE_CURRENT_SOURCE_DIR}/others/raylib_opengl_interop.c)
-
-    # Remove the -rdynamic flag because otherwise emscripten
-    # does not generate HTML+JS+WASM files, only a non-working
-    # and fat HTML
-    string(REPLACE "-rdynamic" "" CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "${CMAKE_SHARED_LIBRARY_LINK_C_FLAGS}")
-
 elseif ("${PLATFORM}" STREQUAL "DRM")
     list(REMOVE_ITEM example_sources ${CMAKE_CURRENT_SOURCE_DIR}/others/rlgl_standalone.c)
     list(REMOVE_ITEM example_sources ${CMAKE_CURRENT_SOURCE_DIR}/others/raylib_opengl_interop.c)
@@ -84,7 +71,6 @@ elseif (NOT SUPPORT_GESTURES_SYSTEM)
     # Items requiring gestures system
     list(REMOVE_ITEM example_sources ${CMAKE_CURRENT_SOURCE_DIR}/textures/textures_mouse_painting.c)
     list(REMOVE_ITEM example_sources ${CMAKE_CURRENT_SOURCE_DIR}/core/core_basic_screen_manager.c)
-    list(REMOVE_ITEM example_sources ${CMAKE_CURRENT_SOURCE_DIR}/core/core_input_gestures_web.c)
     list(REMOVE_ITEM example_sources ${CMAKE_CURRENT_SOURCE_DIR}/core/core_input_gestures.c)
 
 endif ()
@@ -118,11 +104,6 @@ foreach (example_source ${example_sources})
     string(REGEX MATCH ".*/.*/" resources_dir ${example_source})
     string(APPEND resources_dir "resources")
 
-    if (${PLATFORM} MATCHES "Web" AND EXISTS ${resources_dir})
-        # The local resources path needs to be mapped to /resources virtual path
-        string(APPEND resources_dir "@resources")
-        set_target_properties(${example_name} PROPERTIES LINK_FLAGS "--preload-file ${resources_dir}")
-    endif ()
 endforeach ()
 
 # Copy all of the resource files to the destination

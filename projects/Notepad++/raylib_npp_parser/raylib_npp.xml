@@ -79,7 +79,7 @@
             </Overload>
         </KeyWord>
         <KeyWord name="SetWindowTitle" func="yes">
-            <Overload retVal="void" descr="Set title for window (only PLATFORM_DESKTOP and PLATFORM_WEB)">
+            <Overload retVal="void" descr="Set title for window (only PLATFORM_DESKTOP)">
                 <Param name="const char *title" />
             </Overload>
         </KeyWord>

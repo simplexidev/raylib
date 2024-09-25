@@ -18,11 +18,7 @@
 #include "math.h" // Used for tan()
 #include "raymath.h" // Used to calculate camera Direction
 
-#if defined(PLATFORM_DESKTOP)
 #define GLSL_VERSION            330
-#else   // PLATFORM_WEB
-#define GLSL_VERSION            100
-#endif
 
 //------------------------------------------------------------------------------------
 // Declare custom functions required for the example

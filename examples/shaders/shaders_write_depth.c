@@ -17,11 +17,7 @@
 
 #include "rlgl.h"
 
-#if defined(PLATFORM_DESKTOP)
 #define GLSL_VERSION            330
-#else   // PLATFORM_WEB
-#define GLSL_VERSION            100
-#endif
 
 //------------------------------------------------------------------------------------
 // Declare custom functions required for the example

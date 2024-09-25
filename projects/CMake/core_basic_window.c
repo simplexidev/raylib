@@ -2,9 +2,8 @@
 *
 *   raylib [core] example - Basic window (adapted for HTML5 platform)
 *
-*   This example is prepared to compile for PLATFORM_WEB and PLATFORM_DESKTOP
+*   This example is prepared to compile for PLATFORM_DESKTOP
 *   As you will notice, code structure is slightly different to the other examples...
-*   To compile it for PLATFORM_WEB just uncomment #define PLATFORM_WEB at beginning
 *
 *   This example has been created using raylib 1.3 (www.raylib.com)
 *   raylib is licensed under an unmodified zlib/libpng license (View raylib.h for details)
@@ -14,10 +13,6 @@
 ********************************************************************************************/
 
 #include "raylib.h"
-
-#if defined(PLATFORM_WEB)
-    #include <emscripten/emscripten.h>
-#endif
 
 //----------------------------------------------------------------------------------
 // Global Variables Definition
@@ -39,9 +34,6 @@ int main()
     //--------------------------------------------------------------------------------------
     InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
 
-#if defined(PLATFORM_WEB)
-    emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
-#else
     SetTargetFPS(60);   // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
 
@@ -50,7 +42,6 @@ int main()
     {
         UpdateDrawFrame();
     }
-#endif
 
     // De-Initialization
     //--------------------------------------------------------------------------------------

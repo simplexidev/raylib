@@ -56,13 +56,6 @@ if (${PLATFORM} MATCHES "Desktop")
         endif ()
     endif ()
 
-elseif (${PLATFORM} MATCHES "Web")
-    set(PLATFORM_CPP "PLATFORM_WEB")
-    if(NOT GRAPHICS)
-        set(GRAPHICS "GRAPHICS_API_OPENGL_ES2")
-    endif()
-    set(CMAKE_STATIC_LIBRARY_SUFFIX ".a")
-
 elseif ("${PLATFORM}" MATCHES "DRM")
     set(PLATFORM_CPP "PLATFORM_DRM")
     set(GRAPHICS "GRAPHICS_API_OPENGL_ES2")

@@ -9,7 +9,7 @@ if (glfw3_FOUND)
 endif()
 
 # Explicitly check against "ON", because USE_EXTERNAL_GLFW is a tristate option
-# Also adding only on desktop (web also uses glfw but it is more limited and is added using an emcc linker flag)
+# Also adding only on desktop
 if(NOT glfw3_FOUND AND NOT USE_EXTERNAL_GLFW STREQUAL "ON" AND "${PLATFORM}" MATCHES "Desktop")
     MESSAGE(STATUS "Using raylib's GLFW")
     set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)

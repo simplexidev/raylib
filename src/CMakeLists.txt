@@ -39,9 +39,7 @@ set(raylib_sources
     )
 
 # <root>/cmake/GlfwImport.cmake handles the details around the inclusion of glfw
-if (NOT ${PLATFORM} MATCHES "Web")
-    include(GlfwImport)
-endif ()
+include(GlfwImport)
 
 # Sets additional platform options and link libraries for each platform
 # also selects the proper graphics API and version for that platform
@@ -65,14 +63,6 @@ else()
                                PRIVATE $<BUILD_INTERFACE:BUILD_LIBTYPE_SHARED>
                                INTERFACE $<INSTALL_INTERFACE:USE_LIBTYPE_SHARED>
                                )
-endif()
-
-if (${PLATFORM} MATCHES "Web")
-    target_link_options(raylib PUBLIC "-sUSE_GLFW=3")
-    if(${GRAPHICS} MATCHES "GRAPHICS_API_OPENGL_ES3")
-        target_link_options(raylib PUBLIC "-sMIN_WEBGL_VERSION=2")
-        target_link_options(raylib PUBLIC "-sMAX_WEBGL_VERSION=2")
-    endif()
 endif()
 
 set_target_properties(raylib PROPERTIES

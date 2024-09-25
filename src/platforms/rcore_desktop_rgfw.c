@@ -534,11 +534,7 @@ void SetWindowFocused(void)
 // Get native window handle
 void *GetWindowHandle(void)
 {
-#ifdef RGFW_WEBASM
-    return (void*)platform.window->src.ctx;
-#else
     return (void*)platform.window->src.window;
-#endif
 }
 
 // Get number of monitors

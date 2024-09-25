@@ -16,11 +16,7 @@
 #include "rlgl.h"
 #include "raymath.h"      // Required for: MatrixPerspective(), MatrixLookAt()
 
-#if defined(PLATFORM_DESKTOP)
-    #define GLSL_VERSION            330
-#else   // PLATFORM_WEB
-    #define GLSL_VERSION            100
-#endif
+#define GLSL_VERSION            330
 
 // Generate cubemap (6 faces) from equirectangular (panorama) texture
 static TextureCubemap GenTextureCubemap(Shader shader, Texture2D panorama, int size, int format);

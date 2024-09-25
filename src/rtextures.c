@@ -4417,7 +4417,6 @@ void UpdateTextureRec(Texture2D texture, Rectangle rec, const void *pixels)
 void GenTextureMipmaps(Texture2D *texture)
 {
     // NOTE: NPOT textures support check inside function
-    // On WebGL (OpenGL ES 2.0) NPOT textures support is limited
     rlGenTextureMipmaps(texture->id, texture->width, texture->height, texture->format, &texture->mipmaps);
 }
 

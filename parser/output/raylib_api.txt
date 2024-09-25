@@ -1097,7 +1097,7 @@ Function 020: SetWindowIcons() (2 input parameters)
 Function 021: SetWindowTitle() (1 input parameters)
   Name: SetWindowTitle
   Return type: void
-  Description: Set title for window (only PLATFORM_DESKTOP and PLATFORM_WEB)
+  Description: Set title for window (only PLATFORM_DESKTOP)
   Param[1]: title (type: const char *)
 Function 022: SetWindowPosition() (2 input parameters)
   Name: SetWindowPosition

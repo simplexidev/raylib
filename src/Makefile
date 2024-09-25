@@ -20,8 +20,6 @@
 #         - Linux (X11 desktop mode)
 #         - macOS/OSX (x64, arm64 (not tested))
 #         - Others (not tested)
-#     > PLATFORM_WEB:
-#         - HTML5 (WebAssembly)
 #     > PLATFORM_DRM:
 #         - Raspberry Pi 0-5 (DRM/KMS)
 #         - Linux DRM subsystem (KMS mode)
@@ -125,7 +123,7 @@ HOST_PLATFORM_OS ?= WINDOWS
 PLATFORM_OS ?= WINDOWS
 
 # Determine PLATFORM_OS when required
-ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW PLATFORM_DESKTOP_SDL PLATFORM_DESKTOP_RGFW PLATFORM_WEB))
+ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW PLATFORM_DESKTOP_SDL PLATFORM_DESKTOP_RGFW))
     # No uname.exe on MinGW!, but OS=Windows_NT on Windows!
     # ifeq ($(UNAME),Msys) -> Windows
     ifeq ($(OS),Windows_NT)
@@ -167,25 +165,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DRM)
         PLATFORM_SHELL = sh
     endif
 endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    ifeq ($(PLATFORM_OS),LINUX)
-        ifndef PLATFORM_SHELL
-            PLATFORM_SHELL = sh
-        endif
-    endif
-endif
-
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    ifeq ($(PLATFORM_OS), WINDOWS)
-        # Emscripten required variables
-        EMSDK_PATH         ?= C:/emsdk
-        EMSCRIPTEN_PATH    ?= $(EMSDK_PATH)/upstream/emscripten
-        CLANG_PATH         := $(EMSDK_PATH)/upstream/bin
-        PYTHON_PATH        := $(EMSDK_PATH)/python/3.9.2-1_64bit
-        NODE_PATH          := $(EMSDK_PATH)/node/14.15.5_64bit/bin
-        export PATH        := $(EMSDK_PATH);$(EMSCRIPTEN_PATH);$(CLANG_PATH);$(NODE_PATH);$(PYTHON_PATH);C:/raylib/MinGW/bin;$(PATH)
-    endif
-endif
 
 # Define raylib graphics api depending on selected platform
 ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW)
@@ -212,11 +191,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DRM)
     # On DRM OpenGL ES 2.0 must be used
     GRAPHICS = GRAPHICS_API_OPENGL_ES2
 endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    # On HTML5 OpenGL ES 2.0 is used, emscripten translates it to WebGL 1.0
-    GRAPHICS = GRAPHICS_API_OPENGL_ES2
-    #GRAPHICS = GRAPHICS_API_OPENGL_ES3      # Uncomment to use ES3/WebGL2 (preliminary support).
-endif
 
 # Define default C compiler and archiver to pack library: CC, AR
 #------------------------------------------------------------------------------------------------
@@ -242,11 +216,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DRM)
         AR = $(RPI_TOOLCHAIN)/bin/$(RPI_TOOLCHAIN_NAME)-ar
     endif
 endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    # HTML5 emscripten compiler
-    CC = emcc
-    AR = emar
-endif
 
 # Define compiler flags: CFLAGS
 #------------------------------------------------------------------------------------------------
@@ -258,7 +227,7 @@ endif
 #  -std=gnu99               defines C language mode (GNU C from 1999 revision)
 #  -Wno-missing-braces      ignore invalid warning (GCC bug 53119)
 #  -Wno-unused-value        ignore unused return values of some functions (i.e. fread())
-#  -D_DEFAULT_SOURCE        use with -std=c99 on Linux and PLATFORM_WEB, required for timespec
+#  -D_DEFAULT_SOURCE        use with -std=c99 on Linux, required for timespec
 #  -D_GNU_SOURCE            access to lots of nonstandard GNU/Linux extension functions
 #  -Werror=pointer-arith    catch unportable code that does direct arithmetic on void pointers
 #  -fno-strict-aliasing     jar_xm.h does shady stuff (breaks strict aliasing)
@@ -268,12 +237,7 @@ ifneq ($(RAYLIB_CONFIG_FLAGS), NONE)
     CFLAGS += -DEXTERNAL_CONFIG_FLAGS $(RAYLIB_CONFIG_FLAGS)
 endif
 
-ifeq ($(TARGET_PLATFORM), PLATFORM_WEB)
-    # NOTE: When using multi-threading in the user code, it requires -pthread enabled
-    CFLAGS += -std=gnu99
-else
-    CFLAGS += -std=c99
-endif
+CFLAGS += -std=c99
 
 ifeq ($(PLATFORM_OS), LINUX)
     CFLAGS += -fPIC
@@ -284,9 +248,6 @@ ifeq ($(RAYLIB_BUILD_MODE),DEBUG)
 endif
 
 ifeq ($(RAYLIB_BUILD_MODE),RELEASE)
-    ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-        CFLAGS += -Os
-    endif
     ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW)
         CFLAGS += -O1
     endif
@@ -299,24 +260,6 @@ endif
 #  -Werror=implicit-function-declaration   catch function calls without prior declaration
 ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW)
     CFLAGS += -Werror=implicit-function-declaration
-endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    # -Os                        # size optimization
-    # -O2                        # optimization level 2, if used, also set --memory-init-file 0
-    # -sUSE_GLFW=3              # Use glfw3 library (context/input management) -> Only for linker!
-    # -sALLOW_MEMORY_GROWTH=1   # to allow memory resizing -> WARNING: Audio buffers could FAIL!
-    # -sTOTAL_MEMORY=16777216   # to specify heap memory size (default = 16MB)
-    # -sUSE_PTHREADS=1          # multithreading support
-    # -sFORCE_FILESYSTEM=1      # force filesystem to load/save files data
-    # -sASSERTIONS=1            # enable runtime checks for common memory allocation errors (-O1 and above turn it off)
-    # -sGL_ENABLE_GET_PROC_ADDRESS # enable using the *glGetProcAddress() family of functions, required for extensions loading
-    # --profiling                # include information for code profiling
-    # --memory-init-file 0       # to avoid an external memory initialization code file (.mem)
-    # --preload-file resources   # specify a resources folder for data compilation
-    ifeq ($(RAYLIB_BUILD_MODE),DEBUG)
-        CFLAGS += -sASSERTIONS=1 --profiling
-    endif
-    #CFLAGS += -sGL_ENABLE_GET_PROC_ADDRESS
 endif
 
 # Define required compilation flags for raylib SHARED lib
@@ -385,9 +328,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW)
 endif
 ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_SDL)
     INCLUDE_PATHS += -I$(SDL_INCLUDE_PATH)
-endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    INCLUDE_PATHS += -Iexternal/glfw/include
 endif
 ifeq ($(TARGET_PLATFORM),PLATFORM_DRM)
     INCLUDE_PATHS += -I/usr/include/libdrm
@@ -534,56 +474,49 @@ all: raylib
 # Compile raylib library
 # NOTE: Release directory is created if not exist
 raylib: $(OBJS)
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    # Compile raylib libray for web
-    #$(CC) $(OBJS) -r -o $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).bc
-	$(AR) rcs $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).a $(OBJS)
-	@echo "raylib library generated (lib$(RAYLIB_LIB_NAME).a)!"
-else
-    ifeq ($(RAYLIB_LIBTYPE),SHARED)
-        ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW PLATFORM_DESKTOP_SDL PLATFORM_DESKTOP_RGFW))
-            ifeq ($(PLATFORM_OS),WINDOWS)
-                # NOTE: Linking with provided resource file
-				$(CC) -shared -o $(RAYLIB_RELEASE_PATH)/$(RAYLIB_LIB_NAME).dll $(OBJS) $(RAYLIB_RES_FILE) $(LDFLAGS) $(LDLIBS)
-				@echo "raylib dynamic library ($(RAYLIB_LIB_NAME).dll) and import library (lib$(RAYLIB_LIB_NAME)dll.a) generated!"
-            endif
-            ifeq ($(PLATFORM_OS),LINUX)
-                # Compile raylib shared library version $(RAYLIB_VERSION).
-                # WARNING: you should type "make clean" before doing this target
-				$(CC) -shared -o $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION) $(OBJS) $(LDFLAGS) $(LDLIBS)
-				@echo "raylib shared library generated (lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION)) in $(RAYLIB_RELEASE_PATH)!"
-				cd $(RAYLIB_RELEASE_PATH) && ln -fsv lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION) lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_API_VERSION)
-				cd $(RAYLIB_RELEASE_PATH) && ln -fsv lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_API_VERSION) lib$(RAYLIB_LIB_NAME).so
-            endif
-            ifeq ($(PLATFORM_OS),OSX)
-				$(CC) -dynamiclib -o $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).dylib $(OBJS) $(LDFLAGS) $(LDLIBS)
-				install_name_tool -id "@rpath/lib$(RAYLIB_LIB_NAME).$(RAYLIB_API_VERSION).dylib" $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).dylib
-				@echo "raylib shared library generated (lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).dylib)!"
-				cd $(RAYLIB_RELEASE_PATH) && ln -fs lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).dylib lib$(RAYLIB_LIB_NAME).$(RAYLIB_API_VERSION).dylib
-				cd $(RAYLIB_RELEASE_PATH) && ln -fs lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).dylib lib$(RAYLIB_LIB_NAME).dylib
-            endif
-            ifeq ($(PLATFORM_OS),BSD)
-                # WARNING: you should type "gmake clean" before doing this target
-				$(CC) -shared -o $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).so $(OBJS) $(LDFLAGS) $(LDLIBS)
-				@echo "raylib shared library generated (lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).so)!"
-				cd $(RAYLIB_RELEASE_PATH) && ln -fs lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).so lib$(RAYLIB_LIB_NAME).$(RAYLIB_API_VERSION).so
-				cd $(RAYLIB_RELEASE_PATH) && ln -fs lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).so lib$(RAYLIB_LIB_NAME).so
-            endif
+ifeq ($(RAYLIB_LIBTYPE),SHARED)
+    ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW PLATFORM_DESKTOP_SDL PLATFORM_DESKTOP_RGFW))
+        ifeq ($(PLATFORM_OS),WINDOWS)
+            # NOTE: Linking with provided resource file
+			$(CC) -shared -o $(RAYLIB_RELEASE_PATH)/$(RAYLIB_LIB_NAME).dll $(OBJS) $(RAYLIB_RES_FILE) $(LDFLAGS) $(LDLIBS)
+			@echo "raylib dynamic library ($(RAYLIB_LIB_NAME).dll) and import library (lib$(RAYLIB_LIB_NAME)dll.a) generated!"
         endif
-        ifeq ($(TARGET_PLATFORM),PLATFORM_DRM)
-                # Compile raylib shared library version $(RAYLIB_VERSION).
-                # WARNING: you should type "make clean" before doing this target
-				$(CC) -shared -o $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION) $(OBJS) $(LDFLAGS) $(LDLIBS)
-				@echo "raylib shared library generated (lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION)) in $(RAYLIB_RELEASE_PATH)!"
-				cd $(RAYLIB_RELEASE_PATH) && ln -fsv lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION) lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_API_VERSION)
-				cd $(RAYLIB_RELEASE_PATH) && ln -fsv lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_API_VERSION) lib$(RAYLIB_LIB_NAME).so
+        ifeq ($(PLATFORM_OS),LINUX)
+            # Compile raylib shared library version $(RAYLIB_VERSION).
+            # WARNING: you should type "make clean" before doing this target
+			$(CC) -shared -o $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION) $(OBJS) $(LDFLAGS) $(LDLIBS)
+			@echo "raylib shared library generated (lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION)) in $(RAYLIB_RELEASE_PATH)!"
+			cd $(RAYLIB_RELEASE_PATH) && ln -fsv lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION) lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_API_VERSION)
+			cd $(RAYLIB_RELEASE_PATH) && ln -fsv lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_API_VERSION) lib$(RAYLIB_LIB_NAME).so
         endif
-    else
-        # Compile raylib static library version $(RAYLIB_VERSION)
-        # WARNING: You should type "make clean" before doing this target.
-		$(AR) rcs $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).a $(OBJS)
-		@echo "raylib static library generated (lib$(RAYLIB_LIB_NAME).a) in $(RAYLIB_RELEASE_PATH)!"
+        ifeq ($(PLATFORM_OS),OSX)
+			$(CC) -dynamiclib -o $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).dylib $(OBJS) $(LDFLAGS) $(LDLIBS)
+			install_name_tool -id "@rpath/lib$(RAYLIB_LIB_NAME).$(RAYLIB_API_VERSION).dylib" $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).dylib
+			@echo "raylib shared library generated (lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).dylib)!"
+			cd $(RAYLIB_RELEASE_PATH) && ln -fs lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).dylib lib$(RAYLIB_LIB_NAME).$(RAYLIB_API_VERSION).dylib
+			cd $(RAYLIB_RELEASE_PATH) && ln -fs lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).dylib lib$(RAYLIB_LIB_NAME).dylib
+        endif
+        ifeq ($(PLATFORM_OS),BSD)
+            # WARNING: you should type "gmake clean" before doing this target
+			$(CC) -shared -o $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).so $(OBJS) $(LDFLAGS) $(LDLIBS)
+			@echo "raylib shared library generated (lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).so)!"
+			cd $(RAYLIB_RELEASE_PATH) && ln -fs lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).so lib$(RAYLIB_LIB_NAME).$(RAYLIB_API_VERSION).so
+			cd $(RAYLIB_RELEASE_PATH) && ln -fs lib$(RAYLIB_LIB_NAME).$(RAYLIB_VERSION).so lib$(RAYLIB_LIB_NAME).so
+        endif
     endif
+    ifeq ($(TARGET_PLATFORM),PLATFORM_DRM)
+            # Compile raylib shared library version $(RAYLIB_VERSION).
+            # WARNING: you should type "make clean" before doing this target
+			$(CC) -shared -o $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION) $(OBJS) $(LDFLAGS) $(LDLIBS)
+			@echo "raylib shared library generated (lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION)) in $(RAYLIB_RELEASE_PATH)!"
+			cd $(RAYLIB_RELEASE_PATH) && ln -fsv lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_VERSION) lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_API_VERSION)
+			cd $(RAYLIB_RELEASE_PATH) && ln -fsv lib$(RAYLIB_LIB_NAME).so.$(RAYLIB_API_VERSION) lib$(RAYLIB_LIB_NAME).so
+    endif
+else
+    # Compile raylib static library version $(RAYLIB_VERSION)
+    # WARNING: You should type "make clean" before doing this target.
+	$(AR) rcs $(RAYLIB_RELEASE_PATH)/lib$(RAYLIB_LIB_NAME).a $(OBJS)
+	@echo "raylib static library generated (lib$(RAYLIB_LIB_NAME).a) in $(RAYLIB_RELEASE_PATH)!"
 endif
 
 # Compile all modules with their prerequisites

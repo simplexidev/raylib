@@ -20,8 +20,6 @@
 #         - Linux (X11 desktop mode)
 #         - macOS/OSX (x64, arm64 (not tested))
 #         - Others (not tested)
-#     > PLATFORM_WEB:
-#         - HTML5 (WebAssembly)
 #     > PLATFORM_DRM:
 #         - Raspberry Pi 0-5 (DRM/KMS)
 #         - Linux DRM subsystem (KMS mode)
@@ -49,7 +47,7 @@
 
 # Define required environment variables
 #------------------------------------------------------------------------------------------------
-# Define target platform: PLATFORM_DESKTOP, PLATFORM_DESKTOP_SDL, PLATFORM_DRM, PLATFORM_WEB
+# Define target platform: PLATFORM_DESKTOP, PLATFORM_DESKTOP_SDL, PLATFORM_DRM
 PLATFORM              ?= PLATFORM_DESKTOP
 
 ifeq ($(PLATFORM), PLATFORM_DESKTOP)
@@ -90,15 +88,8 @@ SDL_LIBRARY_PATH      ?= $(RAYLIB_SRC_PATH)/external/SDL2/lib
 # NOTE: This variable is only used for PLATFORM_OS: LINUX
 USE_WAYLAND_DISPLAY   ?= FALSE
 
-# PLATFORM_WEB: Default properties
-BUILD_WEB_ASYNCIFY    ?= TRUE
-BUILD_WEB_SHELL       ?= $(RAYLIB_PATH)/src/minshell.html
-BUILD_WEB_HEAP_SIZE   ?= 134217728
-BUILD_WEB_RESOURCES   ?= TRUE
-BUILD_WEB_RESOURCES_PATH  ?= $(dir $<)resources@resources
-
 # Determine PLATFORM_OS when required
-ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW PLATFORM_DESKTOP_SDL PLATFORM_DESKTOP_RGFW PLATFORM_WEB))
+ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW PLATFORM_DESKTOP_SDL PLATFORM_DESKTOP_RGFW))
     # No uname.exe on MinGW!, but OS=Windows_NT on Windows!
     # ifeq ($(UNAME),Msys) -> Windows
     ifeq ($(OS),Windows_NT)
@@ -149,18 +140,6 @@ endif
 # Define raylib release directory for compiled library
 RAYLIB_RELEASE_PATH    ?= $(RAYLIB_PATH)/src
 
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    ifeq ($(PLATFORM_OS),WINDOWS)
-        # Emscripten required variables
-		EMSDK_PATH         ?= C:/emsdk
-		EMSCRIPTEN_PATH    ?= $(EMSDK_PATH)/upstream/emscripten
-		CLANG_PATH          = $(EMSDK_PATH)/upstream/bin
-		PYTHON_PATH         = $(EMSDK_PATH)/python/3.9.2-1_64bit
-		NODE_PATH           = $(EMSDK_PATH)/node/14.15.5_64bit/bin
-		export PATH         = $(EMSDK_PATH);$(EMSCRIPTEN_PATH);$(CLANG_PATH);$(NODE_PATH);$(PYTHON_PATH):$$(PATH)
-    endif
-endif
-
 # Define default C compiler: CC
 #------------------------------------------------------------------------------------------------
 CC = gcc
@@ -175,12 +154,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW)
         CC = clang
     endif
 endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    # HTML5 emscripten compiler
-    # WARNING: To compile to HTML5, code must be redesigned
-    # to use emscripten.h and emscripten_set_main_loop()
-    CC = emcc
-endif
 
 # Define default make program: MAKE
 #------------------------------------------------------------------------------------------------
@@ -190,9 +163,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW)
     ifeq ($(PLATFORM_OS),WINDOWS)
         MAKE = mingw32-make
     endif
-endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    MAKE = emmake make
 endif
 
 # Define compiler flags: CFLAGS
@@ -205,24 +175,13 @@ endif
 #  -std=gnu99           defines C language mode (GNU C from 1999 revision)
 #  -Wno-missing-braces  ignore invalid warning (GCC bug 53119)
 #  -Wno-unused-value    ignore unused return values of some functions (i.e. fread())
-#  -D_DEFAULT_SOURCE    use with -std=c99 on Linux and PLATFORM_WEB, required for timespec
+#  -D_DEFAULT_SOURCE    use with -std=c99 on Linux, required for timespec
 CFLAGS = -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Wunused-result
 
 ifeq ($(BUILD_MODE),DEBUG)
     CFLAGS += -g -D_DEBUG
-    ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-        CFLAGS += -sASSERTIONS=1 --profiling
-    endif
 else
-    ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-        ifeq ($(BUILD_WEB_ASYNCIFY),TRUE)
-            CFLAGS += -O3
-        else
-            CFLAGS += -Os
-        endif
-    else
-        CFLAGS += -O2
-    endif
+    CFLAGS += -O2
 endif
 
 # Additional flags for compiler (if desired)
@@ -303,49 +262,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_SDL)
         endif
     endif
     LDFLAGS += -L$(SDL_LIBRARY_PATH)
-endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    # -Os                        # size optimization
-    # -O2                        # optimization level 2, if used, also set --memory-init-file 0
-    # -sUSE_GLFW=3              # Use glfw3 library (context/input management)
-    # -sALLOW_MEMORY_GROWTH=1   # to allow memory resizing -> WARNING: Audio buffers could FAIL!
-    # -sTOTAL_MEMORY=16777216   # to specify heap memory size (default = 16MB) (67108864 = 64MB)
-    # -sUSE_PTHREADS=1          # multithreading support
-    # -sWASM=0                  # disable Web Assembly, emitted by default
-    # -sASYNCIFY                # lets synchronous C/C++ code interact with asynchronous JS
-    # -sFORCE_FILESYSTEM=1      # force filesystem to load/save files data
-    # -sASSERTIONS=1            # enable runtime checks for common memory allocation errors (-O1 and above turn it off)
-    # -sGL_ENABLE_GET_PROC_ADDRESS # enable using the *glGetProcAddress() family of functions, required for extensions loading
-    # --profiling                # include information for code profiling
-    # --memory-init-file 0       # to avoid an external memory initialization code file (.mem)
-    # --preload-file resources   # specify a resources folder for data compilation
-    # --source-map-base          # allow debugging in browser with source map
-    LDFLAGS += -sUSE_GLFW=3 -sTOTAL_MEMORY=$(BUILD_WEB_HEAP_SIZE) -sFORCE_FILESYSTEM=1
-
-    # Build using asyncify
-    ifeq ($(BUILD_WEB_ASYNCIFY),TRUE)
-        LDFLAGS += -sASYNCIFY
-    endif
-
-    # Add resources building if required
-    ifeq ($(BUILD_WEB_RESOURCES),TRUE)
-        LDFLAGS += --preload-file $(BUILD_WEB_RESOURCES_PATH)
-    endif
-
-    # Add debug mode flags if required
-    ifeq ($(BUILD_MODE),DEBUG)
-        LDFLAGS += -sASSERTIONS=1 --profiling
-    endif
-
-    # Define a custom shell .html and output extension
-    LDFLAGS += --shell-file $(BUILD_WEB_SHELL)
-    EXT = .html
-
-    # NOTE: Simple raylib examples are compiled to be interpreter with asyncify, that way,
-    # we can compile same code for ALL platforms with no change required, but, working on bigger
-    # projects, code needs to be refactored to avoid a blocking while() loop, moving Update and Draw
-    # logic to a self contained function: UpdateDrawFrame(), check core_basic_window_web.c for reference.
-
 endif
 
 # Define libraries required on linking: LDLIBS
@@ -455,10 +371,6 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DRM)
     # NOTE: Required packages: libasound2-dev (ALSA)
     LDLIBS = -lraylib -lGLESv2 -lEGL -lpthread -lrt -lm -lgbm -ldrm -ldl -latomic
 endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    # Libraries for web (HTML5) compiling
-    LDLIBS = $(RAYLIB_RELEASE_PATH)/libraylib.a
-endif
 
 # Define source code object files required
 #------------------------------------------------------------------------------------------------
@@ -475,14 +387,12 @@ CORE = \
     core/core_automation_events \
     core/core_basic_screen_manager \
     core/core_basic_window \
-    core/core_basic_window_web \
     core/core_custom_frame_control \
     core/core_custom_logging \
     core/core_drop_files \
     core/core_input_gamepad \
     core/core_input_gamepad_info \
     core/core_input_gestures \
-    core/core_input_gestures_web \
     core/core_input_keys \
     core/core_input_mouse \
     core/core_input_mouse_wheel \
@@ -648,11 +558,8 @@ others: $(OTHERS)
 
 # Generic compilation pattern
 %: %.c
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-	$(MAKE) -f Makefile.Web $@
-else
-	$(CC) -o $@$(EXT) $< $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM) -D$(TARGET_PLATFORM)
-endif
+$(CC) -o $@$(EXT) $< $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM) -D$(TARGET_PLATFORM)
+
 
 # Clean everything
 clean:
@@ -672,12 +579,5 @@ endif
 ifeq ($(TARGET_PLATFORM),PLATFORM_DRM)
 	find . -type f -executable -delete
 	rm -fv *.o
-endif
-ifeq ($(TARGET_PLATFORM),PLATFORM_WEB)
-    ifeq ($(PLATFORM_OS),WINDOWS)
-		del *.wasm *.html *.js *.data
-    else
-		rm -f */*.wasm */*.html */*.js */*.data
-    endif
 endif
 	@echo Cleaning done

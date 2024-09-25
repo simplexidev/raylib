@@ -3758,9 +3758,6 @@ void rlUnloadFramebuffer(unsigned int id)
     glBindFramebuffer(GL_FRAMEBUFFER, id);   // Bind framebuffer to query depth texture type
     glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &depthType);
 
-    // TODO: Review warning retrieving object name in WebGL
-    // WARNING: WebGL: INVALID_ENUM: getFramebufferAttachmentParameter: invalid parameter name
-    // https://registry.khronos.org/webgl/specs/latest/1.0/
     glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &depthId);
 
     unsigned int depthIdU = (unsigned int)depthId;

@@ -721,7 +721,7 @@
             <Param type="Image *" name="images" desc="" />
             <Param type="int" name="count" desc="" />
         </Function>
-        <Function name="SetWindowTitle" retType="void" paramCount="1" desc="Set title for window (only PLATFORM_DESKTOP and PLATFORM_WEB)">
+        <Function name="SetWindowTitle" retType="void" paramCount="1" desc="Set title for window (only PLATFORM_DESKTOP)">
             <Param type="const char *" name="title" desc="" />
         </Function>
         <Function name="SetWindowPosition" retType="void" paramCount="2" desc="Set window position on screen (only PLATFORM_DESKTOP)">

@@ -3205,7 +3205,7 @@ return {
     },
     {
       name = "SetWindowTitle",
-      description = "Set title for window (only PLATFORM_DESKTOP and PLATFORM_WEB)",
+      description = "Set title for window (only PLATFORM_DESKTOP)",
       returnType = "void",
       params = {
         {type = "const char *", name = "title"}

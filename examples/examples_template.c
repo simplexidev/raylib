@@ -43,7 +43,6 @@
      - raylib/examples/<category>/<category>_example_name.png
      - raylib/examples/<category>/resources/*.*
      - raylib/examples/Makefile
-     - raylib/examples/Makefile.Web
      - raylib/examples/README.md
      - raylib/projects/VS2022/examples/<category>_example_name.vcxproj
      - raylib/projects/VS2022/raylib.sln
